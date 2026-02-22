@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
 import os
+import shutil
+import subprocess
 
-OUTPUT_DIR = "processed"
+OUTPUT_DIR = os.path.join("static", "processed")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def detect_players_by_color(frame):
@@ -52,12 +54,15 @@ def process_video(video_path):
             "processed_video": video_path,
         }
 
-    height, width = frame.shape[:2]
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    base_name = os.path.basename(video_path)
+    name_no_ext, _ = os.path.splitext(base_name)
+    frames_dir = os.path.join(OUTPUT_DIR, f"frames_{name_no_ext}")
+    os.makedirs(frames_dir, exist_ok=True)
 
-    output_path = os.path.join(OUTPUT_DIR, "processed_" + os.path.basename(video_path))
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    height, width = frame.shape[:2]
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    if not fps or fps <= 1 or fps > 240:
+        fps = 30
 
     teamA_positions = []
     teamB_positions = []
@@ -72,7 +77,6 @@ def process_video(video_path):
 
         teamA = extract_centroids(maskA)
         teamB = extract_centroids(maskB)
-
         teamA_positions.extend(teamA)
         teamB_positions.extend(teamB)
 
@@ -112,12 +116,41 @@ def process_video(video_path):
             cv2.LINE_AA,
         )
 
-        out.write(frame)
+        frame_path = os.path.join(frames_dir, f"frame_{frame_count:04d}.png")
+        cv2.imwrite(frame_path, frame)
 
         ret, frame = cap.read()
 
     cap.release()
-    out.release()
+
+    output_file = "processed_" + name_no_ext + ".mp4"
+    output_path = os.path.join(OUTPUT_DIR, output_file)
+
+    input_pattern = os.path.join(frames_dir, "frame_%04d.png")
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-framerate",
+        str(int(fps)),
+        "-i",
+        input_pattern,
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        output_path,
+    ]
+
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        shutil.copy(video_path, output_path)
+
+    if os.path.isdir(frames_dir):
+        shutil.rmtree(frames_dir, ignore_errors=True)
+
+    if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+        shutil.copy(video_path, output_path)
 
     return {
         "teamA_positions": teamA_positions,
