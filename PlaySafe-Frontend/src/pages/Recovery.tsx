@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { HeartPulse, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -40,10 +40,49 @@ const Recovery = () => {
   const barsRef = useRef<(HTMLDivElement | null)[]>([]);
   const { user } = useDemoUser();
 
+  const [postureFile, setPostureFile] = useState<File | null>(null);
+  const [posturePreview, setPosturePreview] = useState<string | null>(null);
+  const [injuryResult, setInjuryResult] = useState<any>(null);
+  const [injuryLoading, setInjuryLoading] = useState(false);
+  const [injuryError, setInjuryError] = useState<string | null>(null);
+
   const visiblePlayers =
     user.role === "player" && user.id
       ? players.filter((p) => p.id === user.id)
       : players;
+
+  const handlePostureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPostureFile(file);
+    setPosturePreview(URL.createObjectURL(file));
+    setInjuryResult(null);
+    setInjuryError(null);
+  };
+
+  const handleAnalyzePosture = async () => {
+    if (!postureFile) return;
+    const formData = new FormData();
+    formData.append("player_id", user.id || "player_demo");
+    formData.append("file", postureFile);
+    try {
+      setInjuryLoading(true);
+      setInjuryError(null);
+      const res = await fetch("http://127.0.0.1:8000/analyze-posture/", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setInjuryResult(data);
+      if (data.status !== "success") {
+        setInjuryError(data.message || "No pose detected in the uploaded media.");
+      }
+    } catch (e) {
+      setInjuryError("Injury analysis backend error");
+    } finally {
+      setInjuryLoading(false);
+    }
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -177,6 +216,96 @@ const Recovery = () => {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-card rounded-xl p-6">
+          <h3 className="text-sm font-semibold font-display text-foreground mb-2">
+            Upload posture or motion
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Player or coach can upload a posture image or short motion clip for injury-risk analysis.
+          </p>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={handlePostureUpload}
+            className="block w-full text-xs text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary hover:file:bg-primary/20"
+          />
+          {posturePreview && (
+            <div className="mt-4 space-y-3">
+              {postureFile && postureFile.type.startsWith("image/") ? (
+                <img
+                  src={posturePreview}
+                  className="w-full max-h-72 object-contain rounded-xl border border-border/60"
+                />
+              ) : (
+                <video
+                  src={posturePreview}
+                  controls
+                  className="w-full max-h-72 rounded-xl border border-border/60"
+                />
+              )}
+              <button
+                onClick={handleAnalyzePosture}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-md hover:bg-primary/90 transition-all"
+              >
+                {injuryLoading ? "Analyzing posture..." : "Analyze injury risk"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {injuryError && (
+          <div className="glass-card rounded-xl p-4 border border-destructive/40 bg-destructive/5">
+            <p className="text-xs text-destructive">{injuryError}</p>
+          </div>
+        )}
+
+        {injuryResult && injuryResult.status === "success" && (
+          <div className="glass-card rounded-xl p-6">
+            <h3 className="text-sm font-semibold font-display text-foreground mb-2">
+              Injury risk insights
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Analysis powered by vision metrics and meta/llama-3.3-70b-instruct via NVIDIA.
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+              <div className="rounded-lg bg-primary/10 px-3 py-2">
+                <p className="text-muted-foreground">Risk score</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {Math.round((injuryResult.injury_analysis?.risk_score || 0) * 100)}%
+                </p>
+              </div>
+              <div className="rounded-lg bg-muted px-3 py-2">
+                <p className="text-muted-foreground">Risk level</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {injuryResult.injury_analysis?.risk_level || "n/a"}
+                </p>
+              </div>
+            </div>
+            {injuryResult.injury_analysis?.primary_risks?.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-foreground mb-1">Primary risks</p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                  {injuryResult.injury_analysis.primary_risks.map((r: string, idx: number) => (
+                    <li key={idx}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {injuryResult.injury_analysis?.recommendations?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-foreground mb-1">Recommendations</p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                  {injuryResult.injury_analysis.recommendations.map((r: string, idx: number) => (
+                    <li key={idx}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

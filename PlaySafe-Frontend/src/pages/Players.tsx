@@ -5,14 +5,14 @@ import { ArrowRight } from "lucide-react";
 import { useDemoUser } from "@/context/DemoUserContext";
 
 const players = [
-  { id: "martinez", name: "J. Martinez", number: 10, position: "Forward", age: 26, risk: 72, riskLevel: "High", image: "JM" },
-  { id: "chen", name: "L. Chen", number: 8, position: "Midfielder", age: 24, risk: 34, riskLevel: "Low", image: "LC" },
-  { id: "diallo", name: "A. Diallo", number: 4, position: "Defender", age: 28, risk: 56, riskLevel: "Medium", image: "AD" },
-  { id: "kim", name: "R. Kim", number: 1, position: "Goalkeeper", age: 30, risk: 18, riskLevel: "Low", image: "RK" },
-  { id: "silva", name: "M. Silva", number: 7, position: "Winger", age: 22, risk: 45, riskLevel: "Medium", image: "MS" },
-  { id: "johnson", name: "T. Johnson", number: 5, position: "Defender", age: 27, risk: 61, riskLevel: "High", image: "TJ" },
-  { id: "okafor", name: "C. Okafor", number: 9, position: "Forward", age: 25, risk: 38, riskLevel: "Low", image: "CO" },
-  { id: "mueller", name: "F. Mueller", number: 6, position: "Midfielder", age: 29, risk: 52, riskLevel: "Medium", image: "FM" },
+  { id: "chhetri", name: "S. Chhetri", number: 11, position: "Forward", age: 39, risk: 32, riskLevel: "Low", image: "SC" },
+  { id: "gurpreet", name: "G. S. Sandhu", number: 1, position: "Goalkeeper", age: 32, risk: 41, riskLevel: "Medium", image: "GS" },
+  { id: "jhingan", name: "S. Jhingan", number: 5, position: "Centre Back", age: 30, risk: 58, riskLevel: "Medium", image: "SJ" },
+  { id: "anwar", name: "A. Ali", number: 3, position: "Centre Back", age: 23, risk: 47, riskLevel: "Medium", image: "AA" },
+  { id: "akash", name: "A. Mishra", number: 2, position: "Left Back", age: 23, risk: 36, riskLevel: "Low", image: "AM" },
+  { id: "rahul", name: "R. Bheke", number: 4, position: "Right Back", age: 33, risk: 52, riskLevel: "Medium", image: "RB" },
+  { id: "thapa", name: "A. Thapa", number: 6, position: "Midfielder", age: 26, risk: 49, riskLevel: "Medium", image: "AT" },
+  { id: "brandon", name: "B. Fernandes", number: 10, position: "Attacking Midfielder", age: 29, risk: 44, riskLevel: "Medium", image: "BF" },
 ];
 
 const riskColor = (level: string) => {

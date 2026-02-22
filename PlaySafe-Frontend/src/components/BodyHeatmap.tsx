@@ -1,24 +1,30 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 
+type StressLevel = "low" | "medium" | "high";
+
 interface StressZone {
   id: string;
   label: string;
-  level: "low" | "medium" | "high";
+  level: StressLevel;
   x: number;
   y: number;
 }
 
-const zones: StressZone[] = [
-  { id: "left-shoulder", label: "L. Shoulder", level: "low", x: 35, y: 18 },
-  { id: "right-shoulder", label: "R. Shoulder", level: "low", x: 65, y: 18 },
-  { id: "left-knee", label: "L. Knee", level: "high", x: 38, y: 58 },
-  { id: "right-knee", label: "R. Knee", level: "medium", x: 62, y: 58 },
-  { id: "left-ankle", label: "L. Ankle", level: "medium", x: 38, y: 78 },
-  { id: "right-ankle", label: "R. Ankle", level: "low", x: 62, y: 78 },
-  { id: "lower-back", label: "Lower Back", level: "medium", x: 50, y: 35 },
-  { id: "left-hip", label: "L. Hip", level: "low", x: 40, y: 44 },
-  { id: "right-hip", label: "R. Hip", level: "high", x: 60, y: 44 },
+interface BodyHeatmapProps {
+  zones?: { id: string; level: StressLevel }[];
+}
+
+const baseLayout: Omit<StressZone, "level">[] = [
+  { id: "left_shoulder", label: "L. Shoulder", x: 35, y: 18 },
+  { id: "right_shoulder", label: "R. Shoulder", x: 65, y: 18 },
+  { id: "left_knee", label: "L. Knee", x: 38, y: 58 },
+  { id: "right_knee", label: "R. Knee", x: 62, y: 58 },
+  { id: "left_ankle", label: "L. Ankle", x: 38, y: 78 },
+  { id: "right_ankle", label: "R. Ankle", x: 62, y: 78 },
+  { id: "lower_back", label: "Lower Back", x: 50, y: 35 },
+  { id: "left_hip", label: "L. Hip", x: 40, y: 44 },
+  { id: "right_hip", label: "R. Hip", x: 60, y: 44 },
 ];
 
 const levelColorHex = {
@@ -27,16 +33,22 @@ const levelColorHex = {
   high: "hsl(0, 72%, 55%)",
 };
 
-const levelColor = { low: "bg-success", medium: "bg-warning", high: "bg-destructive" };
+const levelColor = { low: "bg-success", medium: "bg-warning", high: "bg-destructive" } as const;
 const levelGlow = {
   low: "shadow-[0_0_8px_hsla(152,70%,45%,0.4)]",
   medium: "shadow-[0_0_8px_hsla(36,100%,55%,0.4)]",
   high: "shadow-[0_0_12px_hsla(0,72%,55%,0.5)]",
 };
 
-const BodyHeatmap = () => {
+const BodyHeatmap = ({ zones }: BodyHeatmapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  const mergedZones: StressZone[] = baseLayout.map((layout) => {
+    const override = zones?.find((z) => z.id === layout.id);
+    const level: StressLevel = override?.level || "low";
+    return { ...layout, level };
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -49,7 +61,7 @@ const BodyHeatmap = () => {
         { scale: 1, opacity: 1, duration: 0.4, delay: 0.4 + i * 0.08, ease: "back.out(2)" }
       );
       // Pulse animation for high-risk zones
-      if (zones[i].level === "high") {
+      if (mergedZones[i].level === "high") {
         gsap.to(dot, {
           scale: 1.3,
           opacity: 0.6,
@@ -78,7 +90,7 @@ const BodyHeatmap = () => {
           <ellipse cx="57" cy="100" rx="6" ry="3" fill="currentColor" />
         </svg>
 
-        {zones.map((zone, i) => (
+        {mergedZones.map((zone, i) => (
           <div
             key={zone.id}
             ref={(el) => { dotsRef.current[i] = el; }}

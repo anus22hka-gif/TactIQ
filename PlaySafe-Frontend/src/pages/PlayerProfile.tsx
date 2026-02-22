@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -11,101 +11,41 @@ import SkeletonModel from "@/components/webgl/SkeletonModel";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const playersData: Record<string, {
-  name: string; number: number; position: string; age: number;
-  risk: number; fatigue: string; readiness: string; sessions: number;
-  height: string; weight: string; foot: string;
-  zones: { zone: string; risk: string; color: string; desc: string }[];
-  insight: string;
-}> = {
+const playersMeta: Record<
+  string,
+  {
+    name: string;
+    number: number;
+    position: string;
+    age: number;
+    height: string;
+    weight: string;
+    foot: string;
+  }
+> = {
+  chhetri: {
+    name: "S. Chhetri",
+    number: 11,
+    position: "Forward",
+    age: 39,
+    height: "170cm",
+    weight: "70kg",
+    foot: "Right",
+  },
   martinez: {
-    name: "J. Martinez", number: 10, position: "Forward", age: 26,
-    risk: 72, fatigue: "68%", readiness: "54%", sessions: 48,
-    height: "182cm", weight: "78kg", foot: "Right",
-    zones: [
-      { zone: "Left Knee", risk: "High", color: "bg-destructive", desc: "Valgus deviation +14%" },
-      { zone: "Right Hip", risk: "High", color: "bg-destructive", desc: "Asymmetric load pattern" },
-      { zone: "Right Knee", risk: "Medium", color: "bg-warning", desc: "Deceleration stress" },
-      { zone: "Left Ankle", risk: "Medium", color: "bg-warning", desc: "Landing instability" },
-      { zone: "Spine", risk: "Medium", color: "bg-warning", desc: "Rotation compensation" },
-    ],
-    insight: "Repeated high-speed deceleration during defensive pressing increased left knee load by 9.2% over the last 3 sessions. Recommend reducing press intensity or substituting after 65th minute.",
-  },
-  chen: {
-    name: "L. Chen", number: 8, position: "Midfielder", age: 24,
-    risk: 34, fatigue: "42%", readiness: "81%", sessions: 52,
-    height: "175cm", weight: "72kg", foot: "Left",
-    zones: [
-      { zone: "Right Ankle", risk: "Medium", color: "bg-warning", desc: "Slight lateral instability" },
-      { zone: "Left Hamstring", risk: "Low", color: "bg-success", desc: "Normal range" },
-    ],
-    insight: "L. Chen shows excellent recovery metrics. Slight right ankle instability detected — recommend proprioception drills. Safe for full match load.",
-  },
-  diallo: {
-    name: "A. Diallo", number: 4, position: "Defender", age: 28,
-    risk: 56, fatigue: "58%", readiness: "62%", sessions: 45,
-    height: "190cm", weight: "85kg", foot: "Right",
-    zones: [
-      { zone: "Lower Back", risk: "High", color: "bg-destructive", desc: "Compression loading +18%" },
-      { zone: "Right Knee", risk: "Medium", color: "bg-warning", desc: "Lateral stress" },
-      { zone: "Left Groin", risk: "Medium", color: "bg-warning", desc: "Adductor tightness" },
-    ],
-    insight: "A. Diallo's aerial duel frequency is causing elevated spinal compression. Recommend reducing heading drills and focusing on core stabilization.",
-  },
-  kim: {
-    name: "R. Kim", number: 1, position: "Goalkeeper", age: 30,
-    risk: 18, fatigue: "28%", readiness: "92%", sessions: 50,
-    height: "188cm", weight: "82kg", foot: "Right",
-    zones: [
-      { zone: "Right Shoulder", risk: "Low", color: "bg-success", desc: "Normal diving load" },
-    ],
-    insight: "R. Kim is in optimal condition. All biomechanical markers within safe thresholds. Clear for extended match play.",
-  },
-  silva: {
-    name: "M. Silva", number: 7, position: "Winger", age: 22,
-    risk: 45, fatigue: "51%", readiness: "70%", sessions: 38,
-    height: "172cm", weight: "68kg", foot: "Left",
-    zones: [
-      { zone: "Right Hamstring", risk: "Medium", color: "bg-warning", desc: "Sprint load accumulation" },
-      { zone: "Left Knee", risk: "Low", color: "bg-success", desc: "Stable" },
-    ],
-    insight: "M. Silva's sprint volume has increased 22% this week. Right hamstring showing early fatigue markers. Recommend managing sprint intensity in next training session.",
-  },
-  johnson: {
-    name: "T. Johnson", number: 5, position: "Defender", age: 27,
-    risk: 61, fatigue: "63%", readiness: "55%", sessions: 44,
-    height: "186cm", weight: "83kg", foot: "Right",
-    zones: [
-      { zone: "Left Ankle", risk: "High", color: "bg-destructive", desc: "Previous injury site — elevated load" },
-      { zone: "Right Hip", risk: "Medium", color: "bg-warning", desc: "Compensation pattern detected" },
-    ],
-    insight: "T. Johnson's left ankle (previous injury site) showing elevated stress markers. Right hip compensating — recommend targeted rehab and reduced match minutes.",
-  },
-  okafor: {
-    name: "C. Okafor", number: 9, position: "Forward", age: 25,
-    risk: 38, fatigue: "40%", readiness: "78%", sessions: 41,
-    height: "184cm", weight: "80kg", foot: "Right",
-    zones: [
-      { zone: "Right Knee", risk: "Low", color: "bg-success", desc: "Normal load" },
-      { zone: "Left Calf", risk: "Low", color: "bg-success", desc: "Minor tightness" },
-    ],
-    insight: "C. Okafor performing well within safe thresholds. Minor left calf tightness — standard post-match recovery protocol advised.",
-  },
-  mueller: {
-    name: "F. Mueller", number: 6, position: "Midfielder", age: 29,
-    risk: 52, fatigue: "55%", readiness: "64%", sessions: 46,
-    height: "180cm", weight: "76kg", foot: "Left",
-    zones: [
-      { zone: "Right Groin", risk: "Medium", color: "bg-warning", desc: "Adductor strain risk" },
-      { zone: "Lower Back", risk: "Medium", color: "bg-warning", desc: "Rotational load" },
-    ],
-    insight: "F. Mueller's passing volume causing rotational load on lower back. Right groin showing strain markers. Consider rotation in midfield during the second half.",
+    name: "J. Martinez",
+    number: 10,
+    position: "Forward",
+    age: 26,
+    height: "182cm",
+    weight: "78kg",
+    foot: "Right",
   },
 };
 
 const PlayerProfile = () => {
   const { playerId } = useParams();
-  const player = playersData[playerId || "martinez"] || playersData.martinez;
+  const player = playersMeta[playerId || "martinez"] || playersMeta.martinez;
 
   const headerRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -113,6 +53,12 @@ const PlayerProfile = () => {
   const chartsRef = useRef<HTMLDivElement>(null);
   const skeletonSectionRef = useRef<HTMLDivElement>(null);
   const bioRef = useRef<HTMLDivElement>(null);
+
+  const [postureFile, setPostureFile] = useState<File | null>(null);
+  const [posturePreview, setPosturePreview] = useState<string | null>(null);
+  const [injuryResult, setInjuryResult] = useState<any>(null);
+  const [injuryLoading, setInjuryLoading] = useState(false);
+  const [injuryError, setInjuryError] = useState<string | null>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -159,7 +105,95 @@ const PlayerProfile = () => {
     return () => ctx.revert();
   }, [playerId]);
 
-  const riskVariant = player.risk >= 60 ? "danger" : player.risk >= 40 ? "warning" : "primary";
+  const riskScore =
+    injuryResult && injuryResult.status === "success"
+      ? Math.round((injuryResult.injury_analysis?.risk_score || 0) * 100)
+      : null;
+
+  const riskLevel = injuryResult?.injury_analysis?.risk_level || "unknown";
+
+  const fatigueValue =
+    riskScore !== null ? `${Math.min(100, Math.max(0, riskScore + 10))}%` : "—";
+
+  const readinessValue =
+    riskScore !== null ? `${Math.max(0, 100 - riskScore)}%` : "—";
+
+  const sessionsValue =
+    injuryResult?.joint_metrics?.frames_analyzed != null
+      ? String(injuryResult.joint_metrics.frames_analyzed)
+      : "—";
+
+  const riskVariant =
+    riskScore !== null && riskScore >= 60
+      ? "danger"
+      : riskScore !== null && riskScore >= 40
+      ? "warning"
+      : "primary";
+
+  const insightText =
+    injuryResult && injuryResult.status === "success"
+      ? (injuryResult.injury_analysis?.explanations?.[0] ||
+          injuryResult.injury_analysis?.recommendations?.[0] ||
+          "")
+      : "";
+
+  const zoneRisks: { id: string; level: "low" | "medium" | "high"; description: string }[] =
+    injuryResult && injuryResult.status === "success"
+      ? (injuryResult.injury_analysis?.zone_risks || []).map(
+          (z: any) => ({
+            id: String(z.zone),
+            level:
+              String(z.level) === "high" || String(z.level) === "medium"
+                ? (String(z.level) as "low" | "medium" | "high")
+                : "low",
+            description: String(z.description || ""),
+          })
+        )
+      : [];
+
+  const handlePostureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPostureFile(file);
+    setPosturePreview(URL.createObjectURL(file));
+    setInjuryResult(null);
+    setInjuryError(null);
+  };
+
+  const handleAnalyzePosture = async () => {
+    if (!postureFile) return;
+    const id = playerId || "chhetri";
+    const formData = new FormData();
+    formData.append("player_id", id);
+    formData.append("file", postureFile);
+    const heightNum = parseFloat(player.height.replace("cm", ""));
+    const weightNum = parseFloat(player.weight.replace("kg", ""));
+    if (!Number.isNaN(heightNum)) {
+      formData.append("height_cm", String(heightNum));
+    }
+    if (!Number.isNaN(weightNum)) {
+      formData.append("weight_kg", String(weightNum));
+    }
+    formData.append("position", player.position);
+    formData.append("preferred_foot", player.foot);
+    try {
+      setInjuryLoading(true);
+      setInjuryError(null);
+      const res = await fetch("http://127.0.0.1:8000/analyze-posture/", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setInjuryResult(data);
+      if (data.status !== "success") {
+        setInjuryError(data.message || "No pose detected in the uploaded media.");
+      }
+    } catch {
+      setInjuryError("Injury analysis backend error");
+    } finally {
+      setInjuryLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 pt-24 pb-16 space-y-8">
@@ -187,7 +221,7 @@ const PlayerProfile = () => {
           { label: "Weight", val: player.weight },
           { label: "Preferred Foot", val: player.foot },
           { label: "Position", val: player.position },
-          { label: "Sessions Tracked", val: String(player.sessions) },
+          { label: "Sessions Tracked", val: sessionsValue },
         ].map((b) => (
           <div key={b.label} className="flex-1 min-w-[120px]">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{b.label}</p>
@@ -198,27 +232,87 @@ const PlayerProfile = () => {
 
       {/* Stats */}
       <div ref={statsRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Injury Risk" value={String(player.risk)} subtitle={player.risk >= 60 ? "High risk zone" : player.risk >= 40 ? "Moderate risk" : "Low risk"} icon={Activity} variant={riskVariant as any} />
-        <StatCard title="Fatigue Index" value={player.fatigue} subtitle={parseInt(player.fatigue) > 50 ? "Above threshold" : "Within limits"} icon={TrendingDown} variant="warning" />
-        <StatCard title="Readiness" value={player.readiness} subtitle={parseInt(player.readiness) > 70 ? "Good" : "Below optimal"} icon={Gauge} variant="default" />
-        <StatCard title="Sessions Tracked" value={String(player.sessions)} subtitle="Since Jan 2026" icon={HeartPulse} variant="primary" />
+        <StatCard
+          title="Injury Risk"
+          value={riskScore !== null ? String(riskScore) : "—"}
+          subtitle={
+            riskScore === null
+              ? "Awaiting posture analysis"
+              : riskScore >= 60
+              ? "High risk zone"
+              : riskScore >= 40
+              ? "Moderate risk"
+              : "Low risk"
+          }
+          icon={Activity}
+          variant={riskVariant as any}
+        />
+        <StatCard
+          title="Fatigue Index"
+          value={fatigueValue}
+          subtitle={
+            fatigueValue !== "—" && parseInt(fatigueValue) > 50
+              ? "Above threshold"
+              : "Within limits"
+          }
+          icon={TrendingDown}
+          variant="warning"
+        />
+        <StatCard
+          title="Readiness"
+          value={readinessValue}
+          subtitle={
+            readinessValue !== "—" && parseInt(readinessValue) > 70
+              ? "Good"
+              : "Below optimal"
+          }
+          icon={Gauge}
+          variant="default"
+        />
+        <StatCard
+          title="Sessions Tracked"
+          value={sessionsValue}
+          subtitle="Frames analyzed from latest session"
+          icon={HeartPulse}
+          variant="primary"
+        />
       </div>
 
       {/* Charts + Risk */}
       <div ref={chartsRef} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6" style={{ opacity: 0 }}>
           <BaselineChart />
-          <div ref={insightRef} className="glass-card rounded-xl p-5 border-l-4 border-l-warning" style={{ opacity: 0 }}>
-            <h4 className="text-sm font-semibold font-display text-foreground mb-2">AI Insight</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed">"{player.insight}"</p>
+          <div
+            ref={insightRef}
+            className="glass-card rounded-xl p-5 border-l-4 border-l-warning"
+            style={{ opacity: 0 }}
+          >
+            <h4 className="text-sm font-semibold font-display text-foreground mb-2">
+              AI Insight
+            </h4>
+            {insightText ? (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                "{insightText}"
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Upload a posture or motion clip below to generate a personalized injury-risk
+                insight for this player.
+              </p>
+            )}
           </div>
         </div>
         <div className="space-y-6" style={{ opacity: 0 }}>
           <div className="glass-card rounded-xl p-6 flex flex-col items-center">
             <h3 className="text-sm font-semibold font-display text-foreground mb-4 self-start">Overall Risk</h3>
-            <RiskGauge score={player.risk} label="Injury Risk Score" size="lg" />
+            <RiskGauge score={riskScore || 0} label="Injury Risk Score" size="lg" />
           </div>
-          <BodyHeatmap />
+          <BodyHeatmap
+            zones={zoneRisks.map((z) => ({
+              id: z.id,
+              level: z.level,
+            }))}
+          />
         </div>
       </div>
 
@@ -231,17 +325,38 @@ const PlayerProfile = () => {
               Interactive skeleton visualization showing real-time stress distribution for {player.name}.
             </p>
             <div className="space-y-3">
-              {player.zones.map((item) => (
-                <div key={item.zone} className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2.5">
+              {zoneRisks.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2.5"
+                >
                   <div className="flex items-center gap-3">
-                    <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        item.level === "high"
+                          ? "bg-destructive"
+                          : item.level === "medium"
+                          ? "bg-warning"
+                          : "bg-success"
+                      }`}
+                    />
                     <div>
-                      <span className="text-xs font-semibold text-foreground">{item.zone}</span>
-                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                      <span className="text-xs font-semibold text-foreground">
+                        {item.id.replace("_", " ")}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground">{item.description}</p>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${item.risk === "High" ? "text-destructive" : item.risk === "Medium" ? "text-warning" : "text-success"}`}>
-                    {item.risk}
+                  <span
+                    className={`text-[10px] font-semibold uppercase tracking-wider ${
+                      item.level === "high"
+                        ? "text-destructive"
+                        : item.level === "medium"
+                        ? "text-warning"
+                        : "text-success"
+                    }`}
+                  >
+                    {item.level}
                   </span>
                 </div>
               ))}
@@ -257,6 +372,49 @@ const PlayerProfile = () => {
           </div>
           <SkeletonModel className="h-[420px] w-full" />
         </div>
+      </div>
+
+      <div className="glass-card rounded-xl p-6">
+        <h3 className="text-sm font-semibold font-display text-foreground mb-2">
+          Upload posture or motion for this player
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Upload a side or front view image, or a short motion clip, to run a fresh injury-risk
+          analysis for this player using OpenCV + NVIDIA meta/llama-3.3-70b-instruct.
+        </p>
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={handlePostureUpload}
+          className="block w-full text-xs text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary hover:file:bg-primary/20"
+        />
+        {injuryError && (
+          <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+            <p className="text-[11px] text-destructive">{injuryError}</p>
+          </div>
+        )}
+        {posturePreview && (
+          <div className="mt-4 space-y-3">
+            {postureFile && postureFile.type.startsWith("image/") ? (
+              <img
+                src={posturePreview}
+                className="w-full max-h-72 object-contain rounded-xl border border-border/60"
+              />
+            ) : (
+              <video
+                src={posturePreview}
+                controls
+                className="w-full max-h-72 rounded-xl border border-border/60"
+              />
+            )}
+            <button
+              onClick={handleAnalyzePosture}
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-md hover:bg-primary/90 transition-all"
+            >
+              {injuryLoading ? "Analyzing posture..." : "Analyze injury risk"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

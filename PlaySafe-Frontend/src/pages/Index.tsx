@@ -18,6 +18,7 @@ const Index = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<any>(null);
   const [playerId, setPlayerId] = useState<string>("player_001");
+  const [selectedPlayerTrack, setSelectedPlayerTrack] = useState<string | null>(null);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,6 +44,13 @@ const Index = () => {
       );
       const data = await response.json();
       setResult(data);
+      const allTracks = [
+        ...(data.player_metrics?.teamA || []),
+        ...(data.player_metrics?.teamB || []),
+      ];
+      if (allTracks.length > 0) {
+        setSelectedPlayerTrack(allTracks[0].id);
+      }
     } catch {
       alert("Backend error");
     } finally {
@@ -64,6 +72,16 @@ const Index = () => {
   const confidence = result?.model_confidence
     ? result.model_confidence * 100
     : 0;
+
+  const playerMetricsA = result?.player_metrics?.teamA || [];
+  const playerMetricsB = result?.player_metrics?.teamB || [];
+  const allPlayerTracks = [...playerMetricsA, ...playerMetricsB];
+  const effectiveTrackId =
+    selectedPlayerTrack || (allPlayerTracks.length > 0 ? allPlayerTracks[0].id : null);
+  const selectedTrack =
+    effectiveTrackId && allPlayerTracks.length > 0
+      ? allPlayerTracks.find((p: any) => p.id === effectiveTrackId) || allPlayerTracks[0]
+      : null;
 
   return (
     <div className="max-w-7xl mx-auto px-6 pt-24 pb-16 space-y-8">
@@ -178,6 +196,65 @@ const Index = () => {
               </div>
             )}
           </div>
+
+          {result?.player_metrics && selectedTrack && (
+            <div className="glass-card rounded-2xl p-5">
+              <h3 className="text-sm font-semibold font-display text-foreground mb-3">
+                Player load analysis
+              </h3>
+              <div className="flex items-center gap-3 mb-3">
+                <select
+                  value={effectiveTrackId || ""}
+                  onChange={(e) => setSelectedPlayerTrack(e.target.value)}
+                  className="text-xs rounded-md border border-input bg-background px-2 py-1 outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
+                >
+                  {playerMetricsA.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      Team A – {p.id}
+                    </option>
+                  ))}
+                  {playerMetricsB.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      Team B – {p.id}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground">
+                  Per-track metrics from the processed match video.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-lg bg-muted px-3 py-2">
+                  <p className="text-muted-foreground">Total distance</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {selectedTrack.total_distance_m
+                      ? `${selectedTrack.total_distance_m.toFixed(1)} m`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted px-3 py-2">
+                  <p className="text-muted-foreground">Max speed</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {selectedTrack.max_speed_mps
+                      ? `${(selectedTrack.max_speed_mps * 3.6).toFixed(1)} km/h`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-primary/10 px-3 py-2">
+                  <p className="text-muted-foreground">Sprint count</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {selectedTrack.sprint_count ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-primary/10 px-3 py-2">
+                  <p className="text-muted-foreground">Hard decelerations</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {selectedTrack.hard_decelerations ?? 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
