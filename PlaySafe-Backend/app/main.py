@@ -1,12 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api.routes import router
 
 app = FastAPI(title="PlaySafe AI Backend")
 
+origins = [
+    "http://localhost:8080",
+    "https://tact-iq-seven.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # 👈 IMPORTANT
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -14,10 +20,5 @@ app.add_middleware(
 
 app.include_router(router)
 
-from fastapi.staticfiles import StaticFiles
-
 app.mount("/processed", StaticFiles(directory="processed"), name="processed")
-
-from fastapi.staticfiles import StaticFiles
-
 app.mount("/static", StaticFiles(directory="static"), name="static")

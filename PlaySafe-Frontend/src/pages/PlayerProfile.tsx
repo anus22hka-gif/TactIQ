@@ -59,6 +59,8 @@ const PlayerProfile = () => {
   const [injuryResult, setInjuryResult] = useState<any>(null);
   const [injuryLoading, setInjuryLoading] = useState(false);
   const [injuryError, setInjuryError] = useState<string | null>(null);
+  const apiBase =
+    import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -179,7 +181,7 @@ const PlayerProfile = () => {
     try {
       setInjuryLoading(true);
       setInjuryError(null);
-      const res = await fetch("http://127.0.0.1:8000/analyze-posture/", {
+      const res = await fetch(`${apiBase}/analyze-posture/`, {
         method: "POST",
         body: formData,
       });

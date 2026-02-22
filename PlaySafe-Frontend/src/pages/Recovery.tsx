@@ -32,6 +32,9 @@ const statusStyle = {
   caution: "text-destructive bg-destructive/10",
 };
 
+const apiBase =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+
 const Recovery = () => {
   const headerRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -68,7 +71,7 @@ const Recovery = () => {
     try {
       setInjuryLoading(true);
       setInjuryError(null);
-      const res = await fetch("http://127.0.0.1:8000/analyze-posture/", {
+      const res = await fetch(`${apiBase}/analyze-posture/`, {
         method: "POST",
         body: formData,
       });

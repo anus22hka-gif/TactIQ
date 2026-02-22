@@ -1,9 +1,12 @@
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+
 export async function uploadBaseline(file: File, playerId: string) {
   const formData = new FormData();
   formData.append("player_id", playerId);
   formData.append("file", file);
 
-  const response = await fetch("http://127.0.0.1:8000/upload-baseline/", {
+  const response = await fetch(`${API_BASE}/upload-baseline/`, {
     method: "POST",
     body: formData,
   });
@@ -23,7 +26,7 @@ export async function analyzeMatch(file: File, playerId: string) {
   formData.append("player_id", playerId);
   formData.append("file", file);
 
-  const response = await fetch("http://127.0.0.1:8000/analyze-match/", {
+  const response = await fetch(`${API_BASE}/analyze-match/`, {
     method: "POST",
     body: formData,
   });
