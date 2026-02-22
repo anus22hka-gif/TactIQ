@@ -1,0 +1,30 @@
+playsafe-ai/
+│
+├── app/
+│   ├── main.py
+│   ├── config.py
+│   ├── schemas.py
+│   │
+│   ├── api/
+│   │   ├── routes.py
+│   │
+│   ├── services/
+│   │   ├── video_processor.py
+│   │   ├── pose_extractor.py
+│   │   ├── feature_engineer.py
+│   │   ├── baseline_model.py
+│   │   ├── risk_analyzer.py
+│   │
+│   ├── models/
+│   │   ├── baseline_storage.py
+│   │
+│   ├── utils/
+│   │   ├── helpers.py
+│
+├── data/
+│   ├── baselines/
+│   ├── uploads/
+│
+├── requirements.txt
+├── run.py
+└── README.md
