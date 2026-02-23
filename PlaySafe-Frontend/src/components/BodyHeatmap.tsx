@@ -13,6 +13,7 @@ interface StressZone {
 
 interface BodyHeatmapProps {
   zones?: { id: string; level: StressLevel }[];
+  photoUrl?: string;
 }
 
 const baseLayout: Omit<StressZone, "level">[] = [
@@ -40,7 +41,7 @@ const levelGlow = {
   high: "shadow-[0_0_12px_hsla(0,72%,55%,0.5)]",
 };
 
-const BodyHeatmap = ({ zones }: BodyHeatmapProps) => {
+const BodyHeatmap = ({ zones, photoUrl }: BodyHeatmapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -78,17 +79,25 @@ const BodyHeatmap = ({ zones }: BodyHeatmapProps) => {
   return (
     <div ref={containerRef} className="glass-card rounded-xl p-6" style={{ opacity: 0 }}>
       <h3 className="text-sm font-semibold font-display text-foreground mb-4">Stress Zones</h3>
-      <div className="relative mx-auto" style={{ width: 200, height: 320 }}>
-        <svg viewBox="0 0 100 160" className="w-full h-full opacity-20 text-foreground">
-          <circle cx="50" cy="12" r="8" fill="currentColor" />
-          <rect x="38" y="22" width="24" height="35" rx="6" fill="currentColor" />
-          <rect x="26" y="24" width="10" height="28" rx="4" fill="currentColor" />
-          <rect x="64" y="24" width="10" height="28" rx="4" fill="currentColor" />
-          <rect x="38" y="58" width="10" height="40" rx="4" fill="currentColor" />
-          <rect x="52" y="58" width="10" height="40" rx="4" fill="currentColor" />
-          <ellipse cx="43" cy="100" rx="6" ry="3" fill="currentColor" />
-          <ellipse cx="57" cy="100" rx="6" ry="3" fill="currentColor" />
-        </svg>
+      <div className="relative mx-auto overflow-hidden rounded-lg" style={{ width: 200, height: 320 }}>
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt="Player reference"
+            className="absolute inset-0 h-full w-full object-cover opacity-80"
+          />
+        ) : (
+          <svg viewBox="0 0 100 160" className="w-full h-full opacity-20 text-foreground">
+            <circle cx="50" cy="12" r="8" fill="currentColor" />
+            <rect x="38" y="22" width="24" height="35" rx="6" fill="currentColor" />
+            <rect x="26" y="24" width="10" height="28" rx="4" fill="currentColor" />
+            <rect x="64" y="24" width="10" height="28" rx="4" fill="currentColor" />
+            <rect x="38" y="58" width="10" height="40" rx="4" fill="currentColor" />
+            <rect x="52" y="58" width="10" height="40" rx="4" fill="currentColor" />
+            <ellipse cx="43" cy="100" rx="6" ry="3" fill="currentColor" />
+            <ellipse cx="57" cy="100" rx="6" ry="3" fill="currentColor" />
+          </svg>
+        )}
 
         {mergedZones.map((zone, i) => (
           <div

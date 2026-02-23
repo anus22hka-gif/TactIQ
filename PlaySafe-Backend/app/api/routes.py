@@ -7,7 +7,7 @@ from app.services.feature_engineer import compute_formation_metrics
 from app.services.risk_analyzer import analyze_tactics
 from app.services.llm_tactics import enrich_tactics_with_llm, analyze_injury_with_llm
 from app.services.pose_extractor import analyze_posture_file
-from app.services.baseline_model import update_posture_baseline
+from app.services.baseline_model import update_posture_baseline, load_posture_baseline
 from typing import Optional
 
 
@@ -142,6 +142,7 @@ async def analyze_posture(
     weight_kg: Optional[float] = Form(None),
     position: Optional[str] = Form(None),
     preferred_foot: Optional[str] = Form(None),
+    mode: Optional[str] = Form("analysis"),
 ):
     try:
         file_path = os.path.join(UPLOAD_DIR, file.filename)
@@ -158,7 +159,10 @@ async def analyze_posture(
                 "joint_metrics": None,
             }
 
-        baseline_info = update_posture_baseline(player_id, joint_metrics)
+        if mode == "baseline":
+            baseline_info = update_posture_baseline(player_id, joint_metrics)
+        else:
+            baseline_info = load_posture_baseline(player_id, joint_metrics)
 
         anthropometrics = None
         if any([height_cm, weight_kg, position, preferred_foot]):
