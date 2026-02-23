@@ -2,30 +2,51 @@ import math
 import os
 import cv2
 
+pose_landmarker = None
+
+POSE_LH = 23
+POSE_LK = 25
+POSE_LA = 27
+POSE_RH = 24
+POSE_RK = 26
+POSE_RA = 28
+POSE_LS = 11
+POSE_RS = 12
+
 try:
     import mediapipe as mp
+    from mediapipe.tasks import python as mp_python
+    from mediapipe.tasks.python import vision as mp_vision
 
-    mp_pose = mp.solutions.pose
-    pose = mp_pose.Pose(
-        static_image_mode=True,
-        model_complexity=2,
-        enable_segmentation=False,
-        min_detection_confidence=0.3,
-    )
-except Exception:
-    mp_pose = None
-    pose = None
+    _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+    _MODEL_PATH = os.path.join(_THIS_DIR, "..", "..", "models", "pose_landmarker_full.task")
+    _MODEL_PATH = os.path.abspath(_MODEL_PATH)
+
+    if os.path.exists(_MODEL_PATH):
+        base_options = mp_python.BaseOptions(model_asset_path=_MODEL_PATH)
+        VisionRunningMode = mp_vision.RunningMode
+        pose_options = mp_vision.PoseLandmarkerOptions(
+            base_options=base_options,
+            running_mode=VisionRunningMode.IMAGE,
+        )
+        pose_landmarker = mp_vision.PoseLandmarker.create_from_options(pose_options)
+    else:
+        print("Pose model file not found at", _MODEL_PATH)
+        pose_landmarker = None
+except Exception as e:
+    print("Mediapipe PoseLandmarker init failed:", e)
+    pose_landmarker = None
 
 
 def extract_pose(frame):
-    if pose is None:
+    if pose_landmarker is None:
         return None
-    rgb = frame[:, :, ::-1]
-    result = pose.process(rgb)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+    result = pose_landmarker.detect(mp_image)
     if not result or not result.pose_landmarks:
         return None
-
-    landmarks = result.pose_landmarks.landmark
+    landmarks = result.pose_landmarks[0]
     return [(lm.x, lm.y, lm.z) for lm in landmarks]
 
 
@@ -45,23 +66,20 @@ def _angle(a, b, c):
 
 
 def compute_joint_metrics(landmarks_sequence):
-    if mp_pose is None:
-        return None
-
     left_knee_angles = []
     right_knee_angles = []
     trunk_angles = []
     left_shoulder_angles = []
     right_shoulder_angles = []
 
-    lh = mp_pose.PoseLandmark.LEFT_HIP.value
-    lk = mp_pose.PoseLandmark.LEFT_KNEE.value
-    la = mp_pose.PoseLandmark.LEFT_ANKLE.value
-    rh = mp_pose.PoseLandmark.RIGHT_HIP.value
-    rk = mp_pose.PoseLandmark.RIGHT_KNEE.value
-    ra = mp_pose.PoseLandmark.RIGHT_ANKLE.value
-    ls = mp_pose.PoseLandmark.LEFT_SHOULDER.value
-    rs = mp_pose.PoseLandmark.RIGHT_SHOULDER.value
+    lh = POSE_LH
+    lk = POSE_LK
+    la = POSE_LA
+    rh = POSE_RH
+    rk = POSE_RK
+    ra = POSE_RA
+    ls = POSE_LS
+    rs = POSE_RS
 
     velocities = []
     centers = []
@@ -219,7 +237,7 @@ def compute_joint_metrics(landmarks_sequence):
 
 
 def analyze_posture_file(path):
-    if mp_pose is None or pose is None:
+    if pose_landmarker is None:
         return {
             "left_knee_mean": 0.0,
             "left_knee_min": 0.0,
